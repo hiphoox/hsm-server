@@ -92,13 +92,15 @@ defmodule HSMServer.Command do
   ## Examples
 
       iex> HSMServer.Command.run {"1103", "PRIVATE_KEY", "10", "01", "01", "000040", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "CCE"}
-      {:ok, "000277CCE110300000000000040AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}
+      {:ok, "000277CCE110300000000000256AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}
   """
-  def run({command_id, private_key, hash_mecanism, sign_mecanism, padeo, hash_length, hash, header_code}) do
-    message_length = "000277"   # We alway return a message with this length for the 1103 command. 283 - 6 bytes
+  def run({command_id, _private_key, _hash_mecanism, _sign_mecanism, _padeo, _hash_length, _hash, header_code}) do
+    message_length = "000277"   # We always return a message with this length for the 1103 command. 283 - 6 bytes
     command_state = "00000000"  # Everything was ok
-    signature_length = "000040"  # In production change this to 256
-    signature = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"  # In production change this to a 256 signature length
+    signature_length = "000256"  # It is always 256 for a RSA Asymetric signature
+    # signature = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"  # In production change this to a 256 signature length
+    {s_length, _} = Integer.parse(signature_length)
+    signature = for _ <- 1..s_length, into: "", do: "A"
     # message total bytes = 283 bytes
     # message_length = 6, header_code = 3, command_id = 4, command_state = 8, signature_length = 6  ==  27 bytes
     # signature = 283 - 27 = 256 bytes
