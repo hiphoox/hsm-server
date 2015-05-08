@@ -65,9 +65,8 @@ defmodule HSMServer do
     :gen_tcp.send(socket, format_msg(msg))
   end
 
-  defp format_msg({:ok, text}), do: text <> "\r\n"
-  defp format_msg({:error, :unknown_command}), do: "UNKNOWN COMMAND\r\n"
-  defp format_msg({:error, :invalid_message}), do: "INVALID MESSAGE\r\n"
-  defp format_msg({:error, _}), do: "ERROR\r\n"
-
+  defp format_msg({:ok, text}), do: text
+  defp format_msg({:error, :unknown_command}), do: "000015CCE11030000E000" # WRONG COMMAND ERROR
+  defp format_msg({:error, :invalid_message}), do: "000015CCE110300000001" # "MESSAGE FORMAT ERROR"
+  defp format_msg({:error, _}), do: "000015CCE11030001C800" # EXCEPTION ERROR
 end

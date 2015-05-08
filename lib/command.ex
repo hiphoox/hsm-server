@@ -64,6 +64,10 @@ defmodule HSMServer.Command do
     end
   end
 
+  @sha1  "10"
+  @rsa   "01"
+  @pkcs1 "01"
+  @hash_length "000040"
   @doc """
     General Response Message structure:
 
@@ -93,18 +97,41 @@ defmodule HSMServer.Command do
 
       iex> HSMServer.Command.run {"1103", "PRIVATE_KEY", "10", "01", "01", "000040", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "CCE"}
       {:ok, "000277CCE110300000000000256AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}
+
+      iex> HSMServer.Command.run {"1101", "PRIVATE_KEY", "10", "01", "01", "000040", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "CCE"}
+      {:error, "000015CCE110100018400"}
+
+      iex> HSMServer.Command.run {"1103", "PRIVATE_KEY", "14", "01", "01", "000040", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "CCE"}
+      {:error, "000015CCE110300018400"}
+
+      iex> HSMServer.Command.run {"1103", "PRIVATE_KEY", "10", "11", "01", "000040", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "CCE"}
+      {:error, "000015CCE110300018400"}
+
+      iex> HSMServer.Command.run {"1103", "PRIVATE_KEY", "10", "01", "10", "000040", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "CCE"}
+      {:error, "000015CCE110300018400"}
+
+      iex> HSMServer.Command.run {"1103", "PRIVATE_KEY", "10", "01", "01", "000050", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "CCE"}
+      {:error, "000015CCE110300018400"}
+
+      iex> HSMServer.Command.run {"1103", "PRIVATE_KEY", "10", "01", "01", "000040", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "DCE"}
+      {:error, "000015DCE110300018400"}
+
   """
-  def run({command_id, _private_key, _hash_mecanism, _sign_mecanism, _padeo, _hash_length, _hash, header_code}) do
+  def run({@asym_code, _private_key, @sha1, @rsa, @pkcs1, @hash_length, _hash, @header_code}) do
+    # message's bytes = 283 bytes. If everything is ok, this is all the data the client needs to read
     message_length = "000277"   # We always return a message with this length for the 1103 command. 283 - 6 bytes
-    command_state = "00000000"  # Everything was ok
-    signature_length = "000256"  # It is always 256 for a RSA Asymetric signature
-    # signature = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"  # In production change this to a 256 signature length
-    {s_length, _} = Integer.parse(signature_length)
-    signature = for _ <- 1..s_length, into: "", do: "A"
-    # message total bytes = 283 bytes
+    command_state = "00000000"  # It means that everything was ok
+    signature_length = "000256"  # It is always 256 length for a RSA Asymetric signature
+    signature = for _ <- 1..256, into: "", do: "A"
     # message_length = 6, header_code = 3, command_id = 4, command_state = 8, signature_length = 6  ==  27 bytes
     # signature = 283 - 27 = 256 bytes
-    {:ok, message_length <> header_code <> command_id <> command_state <> signature_length <> signature}
+    {:ok, message_length <> @header_code <> @asym_code <> command_state <> signature_length <> signature}
+  end
+
+  def run({command_id, _private_key, _hash_mecanism, _sign_mecanism, _padeo, _hash_length, _hash, header_code}) do
+    command_state = "00018400"  # NOT ALLOWED IN PRODUCTIONSTATE
+    message_length = "000015"   # We always return a message with this length for any error.
+    {:error, message_length <> header_code <> command_id <> command_state}
   end
 
 end
