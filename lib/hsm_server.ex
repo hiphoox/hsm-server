@@ -65,7 +65,16 @@ defmodule HSMServer do
     :gen_tcp.send(socket, format_msg(msg))
   end
 
-  defp format_msg({:ok, text}), do: text
+  defp format_msg({:ok, text}) do
+    # We want to simulate that the service sometimes is unavailable and responds an error code
+    if :random.uniform < 0.5 do
+      text
+    else
+      text   # Comment this line and uncomment the line below!
+      # {:ok, "000015CCE110300000002"} # SERVICE UNAVAILABLE
+    end
+  end
+
   defp format_msg({:error, :unknown_command}), do: "000015CCE11030000E000" # WRONG COMMAND ERROR
   defp format_msg({:error, :invalid_message}), do: "000015CCE110300000001" # "MESSAGE FORMAT ERROR"
   defp format_msg({:error, _}), do: "000015CCE11030001C800" # EXCEPTION ERROR
