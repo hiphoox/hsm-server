@@ -39,11 +39,10 @@ defmodule HSMServer do
   defp serve(socket) do
     import Pipe
 
-    response =
-      pipe_matching x, {:ok, x},
-        read_line(socket)
-        |> HSMServer.Command.parse
-        |> HSMServer.Command.run
+    response = pipe_matching x, {:ok, x}, # This macro stop the exection of the pipeline if an error ocurrs.
+                read_line(socket)
+                |> HSMServer.Command.parse
+                |> HSMServer.Command.run
 
     write_line(socket, response)
     serve(socket)
@@ -54,11 +53,15 @@ defmodule HSMServer do
   defp read_line(socket) do
     # The HSM doesnt use new line to identify messages
     # So, we need to read the first @message_length bytes in order to know the size of the message
-    {:ok,message_length_header} = :gen_tcp.recv(socket, @message_length)
-    # Convert the bytes to a number. TODO we need to catch the exception if this fails, in order to report an error code
-    {message_size, _} = Integer.parse(message_length_header)
-    # Reads the rest of the message
-    :gen_tcp.recv(socket, message_size)
+    case :gen_tcp.recv(socket, @message_length) do
+    {:ok, message_length_header} ->
+        # Convert the bytes to a number. TODO we need to catch the exception if this fails, in order to report an error code
+        {message_size, _} = Integer.parse(message_length_header)
+        # Reads the rest of the message
+        :gen_tcp.recv(socket, message_size)
+    {:error, error_message} ->
+        IO.inspect error_message
+    end
   end
 
   defp write_line(socket, msg) do

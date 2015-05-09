@@ -41,10 +41,11 @@ defmodule HSMServer.Command do
   end
 
   @hash_length 40  # This is the size of the hash we are sending in production
+  @private_key 11  # Change 11 to 1288 for production
   def parse_command(command, header_code) do
     case command do
       <<command_id    :: binary-size(4),
-        private_key   :: binary-size(11), # Change 11 to 1288 for production
+        private_key   :: binary-size(@private_key),
         hash_mecanism :: binary-size(2),
         sign_mecanism :: binary-size(2),
         padeo         :: binary-size(2),
@@ -52,7 +53,7 @@ defmodule HSMServer.Command do
         hash_bits     :: binary-size(@hash_length)>>
         when <<command_id :: binary-size(4)>> == @asym_code ->
           {:ok, {<<command_id    :: binary-size(4)>>,
-                 <<private_key   :: binary-size(11)>>,
+                 <<private_key   :: binary-size(@private_key)>>,
                  <<hash_mecanism :: binary-size(2)>>,
                  <<sign_mecanism :: binary-size(2)>>,
                  <<padeo         :: binary-size(2)>>,
@@ -119,9 +120,9 @@ defmodule HSMServer.Command do
   """
   def run({@asym_code, _private_key, @sha1, @rsa, @pkcs1, @hash_length, _hash, @header_code}) do
     # message's bytes = 283 bytes. If everything is ok, this is all the data the client needs to read
-    message_length = "000277"   # We always return a message with this length for the 1103 command. 283 - 6 bytes
-    command_state = "00000000"  # It means that everything was ok
-    signature_length = "000256"  # It is always 256 length for a RSA Asymetric signature
+    message_length    = "000277"   # We always return a message with this length for the 1103 command. 283 - 6 bytes
+    command_state     = "00000000" # It means that everything was ok
+    signature_length  = "000256"   # It is always 256 length for a RSA Asymetric signature
     signature = for _ <- 1..256, into: "", do: "A"
     # message_length = 6, header_code = 3, command_id = 4, command_state = 8, signature_length = 6  ==  27 bytes
     # signature = 283 - 27 = 256 bytes
@@ -129,7 +130,7 @@ defmodule HSMServer.Command do
   end
 
   def run({command_id, _private_key, _hash_mecanism, _sign_mecanism, _padeo, _hash_length, _hash, header_code}) do
-    command_state = "00018400"  # NOT ALLOWED IN PRODUCTIONSTATE
+    command_state  = "00018400" # NOT ALLOWED IN PRODUCTIONSTATE
     message_length = "000015"   # We always return a message with this length for any error.
     {:error, message_length <> header_code <> command_id <> command_state}
   end
