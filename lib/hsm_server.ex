@@ -25,7 +25,7 @@ defmodule HSMServer do
     # 2.  `packet: raw` -  receives data as bytes and doesnt use any message delimiter
     # 3.  `active: false` -  block on `gen_tcp.recv/2`  until data is available
     #
-    {:ok, socket} = :gen_tcp.listen(port, [:binary, packet: :raw, active: false])
+    {:ok, socket} = :gen_tcp.listen(port, [:binary, packet: :raw, active: false, reuseaddr: true])
     IO.puts "Accepting connections on port #{port}"
     loop_acceptor(socket)
   end
